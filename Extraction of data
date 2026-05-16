@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import seaborn as sns
+from sklearn.cluster import KMeans
+
 
 def pmtn(dF1,dF2,l, province='TN', fuel='Benzina', is_self=True):
   """This function takes the two dataframes of 'Anagrafica' and 'Prezzi', merges them on the 
@@ -89,5 +91,62 @@ def get_data_trimester_agent(price_folder, anagrafica_folder, fuel='Benzina', is
     #df_pivot = df_pivot.ffill().bfill()
 
     return df_pivot
+
+########
+TO PLOT: 
+avg_prices_tr=get_data_trimester(cartella_prezzi1tr,cartella_anagrafica1tr,list_id=None, province='TN', fuel='Benzina', is_self=True)
+days = np.arange(len(avg_prices_tr))  # Array che va da 0 a 90
+
+# Dividere i dati in due parti: prima e dopo il giorno 13
+days_before = days[:13]
+prices_before = avg_prices_tr[:13]
+days_after = days[13:]
+prices_after = avg_prices_tr[13:]
+
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.plot(days_before, prices_before, label='Prices before the Decree Law', color='blue')
+ax.plot(days_after, prices_after, label='Prices after the Decree Law', color='red')
+ax.axvline(x=12, color='gray', linestyle='--', label='Entry into force of the Decree Law')
+ax.set_xlabel('Day')
+ax.set_ylabel('Average Price')
+ax.set_title('Trend of Average Gasoline Self-Service Prices (First Quarter 2023) in the Province of Trento')
+ax.set_ylim(1.700, 1.95)
+ax.legend()
+plt.show()
+
+####
+PREPARING DATA FOR THE GAME:
+df=get_data_trimester_agent(cartella_prezzi1tr, cartella_anagrafica1tr, fuel='Benzina', province='TN', is_self=True, station_ids=None)
+df.index=pd.to_datetime(df.index, format='%Y%m%d')
+df = df.sort_index()
+missing_ids = df.columns[df.isna().any(axis=0)].tolist()
+df_clean= df.drop(columns=missing_ids)
+means = df_clean.mean()
+standard_deviations = df_clean.std()
+
+#Create a dataframe with data for each player: means are used to divide the petrol stations into clusters
+#standard deviations are used to estimate parameters a priori 
+df_stat = pd.DataFrame({
+    'idImpianto': means.index,
+    'Mean': means.values,
+    'Standard_Deviation': standard_deviations.values
+})
+df_stat.set_index('idImpianto', inplace=True)
+
+df_stat = df_stat[df_stat['Mean']>1.75] #remove outlier (optional)
+
+#SUBDIVISION IN CLUSTERS
+kmeans = KMeans(n_clusters=3, random_state=42)
+df_stat['Cluster_Originale'] = kmeans.fit_predict(df_stat[['Mean']])
+medie_cluster = df_stat.groupby('Cluster_Originale')['Mean'].mean().sort_values()
+mappa_cluster = {vecchio: nuovo for nuovo, vecchio in enumerate(medie_cluster.index)}
+df_stat['Cluster'] = df_stat['Cluster_Originale'].map(mappa_cluster) 
+
+sigma_series = df_stat.loc[df_clean.columns, 'Standard_Deviation']
+df_clean = df[df_stat.index]
+labels_ordinati = df_stat.loc[df_clean.columns, 'Cluster'].values
+labels_series_fixed = pd.Series(labels_ordinati, index=df_clean.columns)
+
+
 
 
