@@ -1,0 +1,93 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+import seaborn as sns
+
+def pmtn(dF1,dF2,l, province='TN', fuel='Benzina', is_self=True):
+  """This function takes the two dataframes of 'Anagrafica' and 'Prezzi', merges them on the 
+  'idImpianto' column, and filters the merged dataframe based on specific conditions. It then 
+  returns the mean of the 'prezzo' column from the filtered dataframe. The function is called pmtn because
+  it was orginally designed to calculate the average price of self-service gasoline in the province of Trento, 
+  but it can be used for other provinces, fuel types, and self-service options by changing the parameters."""
+  df=pd.merge(dF1,dF2, on='idImpianto', how='inner')
+  df_filtered=df[(df['isSelf']==is_self) & (df['descCarburante']==fuel) & (df['Provincia']==province)& (df['idImpianto'].isin(l) if l else df['idImpianto'].notnull())
+  ]
+  return df_filtered['prezzo'].mean()
+
+
+def get_data_trimester(price_folder,anagrafica_folder,list_id=None, province='TN', fuel='Benzina', is_self=True):
+  """ This function takes the paths of the 'Prezzi' and 'Anagrafica' folders, and a list of IDs. 
+  It reads the CSV files from both folders, matches them based on their dates, and calculates 
+  the mean price for each matched pair of files using the 'pmtn' function. The results are stored in an array and returned at the end."""
+  file_price = sorted([f for f in os.listdir(price_folder) if f.endswith('.csv')])
+  file_anagrafica = sorted([f for f in os.listdir(anagrafica_folder) if f.endswith('.csv')])
+
+  file_dict = {}
+
+
+  for price in file_price:
+      #Get the data from the file name
+      date_price = price.split('-')[-1].split('.')[0]
+
+      for anagrafica in file_anagrafica:
+          date_anagrafica = anagrafica.split('-')[-1].split('.')[0]
+          if date_price == date_anagrafica:
+              file_dict[date_price] = (os.path.join(price_folder, price), os.path.join(anagrafica_folder, anagrafica))
+              break
+
+
+  x=np.zeros(len(file_dict))
+  i=0
+  for date, (file_price, file_anagrafica) in file_dict.items():
+      df_price = pd.read_csv(file_price,delimiter=';', on_bad_lines='skip', skiprows=1)
+      df_anagrafica = pd.read_csv(file_anagrafica, delimiter=';', on_bad_lines='skip', skiprows=1)
+      x[i]=pmtn(df_price,df_anagrafica, l=list_id, province=province, fuel=fuel, is_self=is_self)
+      i=i+1
+  return x
+
+def get_data_trimester_agent(price_folder, anagrafica_folder, fuel='Benzina', is_self=True, station_ids=None, province='TN'):
+    """
+    Computes a time series dataframe of fuel prices for specific agents/provinces.
+    Returns a pivot table where Rows = Dates, Columns = idImpianto, Values = Price.
+    """
+    file_price = sorted([f for f in os.listdir(price_folder) if f.endswith('.csv')])
+    file_anagrafica = sorted([f for f in os.listdir(anagrafica_folder) if f.endswith('.csv')])
+
+    file_dict = {}
+    for price in file_price:
+        date_price = price.split('-')[-1].split('.')[0]
+        for anagrafica in file_anagrafica:
+            date_anagrafica = anagrafica.split('-')[-1].split('.')[0]
+            if date_price == date_anagrafica:
+                file_dict[date_price] = (os.path.join(price_folder, price), os.path.join(anagrafica_folder, anagrafica))
+                break
+
+    all_data = []
+
+    for date, (f_price, f_anagrafica) in file_dict.items():
+        df_p = pd.read_csv(f_price, delimiter=';', on_bad_lines='skip', skiprows=1)
+        
+        if station_ids is not None and len(station_ids) > 0:
+            id_condition = df_p['idImpianto'].isin(station_ids)
+        else:
+            df_a = pd.read_csv(f_anagrafica, delimiter=';', on_bad_lines='skip', skiprows=1)
+            valid_ids = df_a[df_a['Provincia'] == province]['idImpianto'].unique()
+            id_condition = df_p['idImpianto'].isin(valid_ids)
+            
+        df_p = df_p[id_condition & (df_p['descCarburante'] == fuel) & (df_p['isSelf'] == is_self)]
+        
+        df_p = df_p[['idImpianto', 'prezzo']].copy()
+        df_p['data'] = date
+        
+        all_data.append(df_p)
+
+    df_total = pd.concat(all_data, ignore_index=True)
+    df_pivot = df_total.pivot_table(index='data', columns='idImpianto', values='prezzo')
+
+    # Optional: Fill missing values if needed (e.g., forward fill, backward fill, or interpolation)
+    #df_pivot = df_pivot.ffill().bfill()
+
+    return df_pivot
+
+
