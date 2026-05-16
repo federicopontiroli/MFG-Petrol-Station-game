@@ -1,15 +1,24 @@
-# MFG-Petrol-Station
-In this repository you can find:
--Extraction of data: a pipeline to extract and clean gasoline prices in Italy according to type of fuel, service and province. Estimation of the volatilities, k-means clustering
+# Mean Field Games for Fuel Pricing
 
--Dynamics simulations: functions to simulate the trajectory are given in the case of homogeneous agents and of K clusters. Real data is used to initialize the dynamics and estimate parameters to fit trajectories. 
+This repository contains the data pipeline, numerical simulations, and empirical calibration for a multi-population **Mean Field Game (MFG)** model applied to the retail fuel market. 
 
--df_clean: table with prices for the first quarter of 2023 for each petrol station in the province of Trento, for gasoline and self type
+The project models the strategic pricing behavior of individual petrol stations as rational agents interacting within a competitive environment, using real-world data from the Autonomous Province of Trento.
 
--df_stat: for each petrol station collects average price over the quarter and standard deviation
+## 🚀 Repository Contents
 
--Other: an example of the dataframe anagrafica and prezzo for one day. Complete data can be found at https://www.mimit.gov.it/it/open-data/elenco-dataset
+* **Data Extraction & Cleaning:** A complete pipeline to extract and clean daily gasoline prices in Italy filtered by fuel type, service mode (e.g., self-service), and province. It includes modules for individual volatility estimation ($\sigma$) and $k$-means clustering.
+* **Dynamics Simulations:** Functions to simulate price trajectories under both homogeneous agent assumptions and multi-population ($K$-clusters) dynamics. Real historical data is utilized to initialize the game and calibrate behavioral parameters against empirical trends.
 
+---
 
+## 📁 Data Structures & Formats
 
+* `df_clean`: A pivot-table dataframe containing daily retail prices for the first quarter of 2023 for each individual petrol station in the Province of Trento (specifically for *Gasoline* and *Self-service* options). Rows represent dates and columns represent station IDs.
+* `df_stat`: A summary statistics dataframe that collects the quarterly average price and standard deviation (idiosyncratic volatility) for each station.
+* `Other / Samples`: Includes sample snapshots of the raw `anagrafica` (station registry) and `prezzo` (daily price logs) dataframes for a single day to illustrate the pipeline's inputs.
 
+---
+
+## 📊 Data Source
+The complete raw datasets are publicly provided by the Italian Ministry of Enterprises and Made in Italy (MIMIT) and can be accessed at:
+👉 [MIMIT Open Data Portal](https://www.mimit.gov.it/it/open-data/elenco-dataset)
