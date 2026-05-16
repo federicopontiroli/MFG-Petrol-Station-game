@@ -23,7 +23,7 @@ The project models the strategic pricing behavior of individual petrol stations 
 The complete raw datasets are publicly provided by the Italian Ministry of Enterprises and Made in Italy (MIMIT) and can be accessed at:
  [MIMIT Open Data Portal](https://www.mimit.gov.it/it/open-data/elenco-dataset)
 
- ##References
+ ## References
 
 If you are interested in the mathematical foundations of Mean Field Games and the core framework that inspired this application, please refer to:
 
