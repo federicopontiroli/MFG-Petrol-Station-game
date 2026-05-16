@@ -4,9 +4,9 @@ This repository contains the data pipeline, numerical simulations, and empirical
 
 The project models the strategic pricing behavior of individual petrol stations as rational agents interacting within a competitive environment, using real-world data from the Autonomous Province of Trento.
 
-## 🚀 Repository Contents
+## Repository Contents
 
-* **Data Extraction & Cleaning:** A complete pipeline to extract and clean daily gasoline prices in Italy filtered by fuel type, service mode (e.g., self-service), and province. It includes modules for individual volatility estimation ($\sigma$) and $k$-means clustering.
+* **Data Extraction & Cleaning:** A complete pipeline to extract and clean daily gasoline prices in Italy filtered by fuel type, service mode (e.g., self-service), and province. It includes modules for individual volatility estimation ($\sigma_i$) and $k$-means clustering.
 * **Dynamics Simulations:** Functions to simulate price trajectories under both homogeneous agent assumptions and multi-population ($K$-clusters) dynamics. Real historical data is utilized to initialize the game and calibrate behavioral parameters against empirical trends.
 
 ---
@@ -19,6 +19,6 @@ The project models the strategic pricing behavior of individual petrol stations 
 
 ---
 
-## 📊 Data Source
+## Data Source
 The complete raw datasets are publicly provided by the Italian Ministry of Enterprises and Made in Italy (MIMIT) and can be accessed at:
-👉 [MIMIT Open Data Portal](https://www.mimit.gov.it/it/open-data/elenco-dataset)
+ [MIMIT Open Data Portal](https://www.mimit.gov.it/it/open-data/elenco-dataset)
