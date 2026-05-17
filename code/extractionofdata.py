@@ -1,0 +1,153 @@
+# Data Extraction & Market Segmentation Pipeline
+
+#This pipeline automates the process of ingestion, alignment, and filtration of the raw MIMIT datasets. It computes regional average prices, builds individual station time series, and applies a $k$-means clustering algorithm to segment the market.
+
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+import seaborn as sns
+from sklearn.cluster import KMeans
+
+
+def pmtn(dF1,dF2,l, province='TN', fuel='Benzina', is_self=True):
+  """This function takes the two dataframes of 'Anagrafica' and 'Prezzi', merges them on the 
+  'idImpianto' column, and filters the merged dataframe based on specific conditions. It then 
+  returns the mean of the 'prezzo' column from the filtered dataframe. The function is called pmtn because
+  it was orginally designed to calculate the average price of self-service gasoline in the province of Trento, 
+  but it can be used for other provinces, fuel types, and self-service options by changing the parameters."""
+  df=pd.merge(dF1,dF2, on='idImpianto', how='inner')
+  df_filtered=df[(df['isSelf']==is_self) & (df['descCarburante']==fuel) & (df['Provincia']==province)& (df['idImpianto'].isin(l) if l else df['idImpianto'].notnull())
+  ]
+  return df_filtered['prezzo'].mean()
+
+
+def get_data_trimester(price_folder,anagrafica_folder,list_id=None, province='TN', fuel='Benzina', is_self=True):
+  """ This function takes the paths of the 'Prezzi' and 'Anagrafica' folders, and a list of IDs. 
+  It reads the CSV files from both folders, matches them based on their dates, and calculates 
+  the mean price for each matched pair of files using the 'pmtn' function. The results are stored in an array and returned at the end."""
+  file_price = sorted([f for f in os.listdir(price_folder) if f.endswith('.csv')])
+  file_anagrafica = sorted([f for f in os.listdir(anagrafica_folder) if f.endswith('.csv')])
+
+  file_dict = {}
+
+
+  for price in file_price:
+      #Get the data from the file name
+      date_price = price.split('-')[-1].split('.')[0]
+
+      for anagrafica in file_anagrafica:
+          date_anagrafica = anagrafica.split('-')[-1].split('.')[0]
+          if date_price == date_anagrafica:
+              file_dict[date_price] = (os.path.join(price_folder, price), os.path.join(anagrafica_folder, anagrafica))
+              break
+
+
+  x=np.zeros(len(file_dict))
+  i=0
+  for date, (file_price, file_anagrafica) in file_dict.items():
+      df_price = pd.read_csv(file_price,delimiter=';', on_bad_lines='skip', skiprows=1)
+      df_anagrafica = pd.read_csv(file_anagrafica, delimiter=';', on_bad_lines='skip', skiprows=1)
+      x[i]=pmtn(df_price,df_anagrafica, l=list_id, province=province, fuel=fuel, is_self=is_self)
+      i=i+1
+  return x
+
+def get_data_trimester_agent(price_folder, anagrafica_folder, fuel='Benzina', is_self=True, station_ids=None, province='TN'):
+    """
+    Computes a time series dataframe of fuel prices for specific agents/provinces.
+    Returns a pivot table where Rows = Dates, Columns = idImpianto, Values = Price.
+    """
+    file_price = sorted([f for f in os.listdir(price_folder) if f.endswith('.csv')])
+    file_anagrafica = sorted([f for f in os.listdir(anagrafica_folder) if f.endswith('.csv')])
+
+    file_dict = {}
+    for price in file_price:
+        date_price = price.split('-')[-1].split('.')[0]
+        for anagrafica in file_anagrafica:
+            date_anagrafica = anagrafica.split('-')[-1].split('.')[0]
+            if date_price == date_anagrafica:
+                file_dict[date_price] = (os.path.join(price_folder, price), os.path.join(anagrafica_folder, anagrafica))
+                break
+
+    all_data = []
+
+    for date, (f_price, f_anagrafica) in file_dict.items():
+        df_p = pd.read_csv(f_price, delimiter=';', on_bad_lines='skip', skiprows=1)
+        
+        if station_ids is not None and len(station_ids) > 0:
+            id_condition = df_p['idImpianto'].isin(station_ids)
+        else:
+            df_a = pd.read_csv(f_anagrafica, delimiter=';', on_bad_lines='skip', skiprows=1)
+            valid_ids = df_a[df_a['Provincia'] == province]['idImpianto'].unique()
+            id_condition = df_p['idImpianto'].isin(valid_ids)
+            
+        df_p = df_p[id_condition & (df_p['descCarburante'] == fuel) & (df_p['isSelf'] == is_self)]
+        
+        df_p = df_p[['idImpianto', 'prezzo']].copy()
+        df_p['data'] = date
+        
+        all_data.append(df_p)
+
+    df_total = pd.concat(all_data, ignore_index=True)
+    df_pivot = df_total.pivot_table(index='data', columns='idImpianto', values='prezzo')
+
+    # Optional: Fill missing values if needed (e.g., forward fill, backward fill, or interpolation)
+    #df_pivot = df_pivot.ffill().bfill()
+
+    return df_pivot
+
+########
+TO PLOT: 
+avg_prices_tr=get_data_trimester(cartella_prezzi1tr,cartella_anagrafica1tr,list_id=None, province='TN', fuel='Benzina', is_self=True)
+days = np.arange(len(avg_prices_tr))  # Array che va da 0 a 90
+
+# Dividere i dati in due parti: prima e dopo il giorno 13
+days_before = days[:13]
+prices_before = avg_prices_tr[:13]
+days_after = days[13:]
+prices_after = avg_prices_tr[13:]
+
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.plot(days_before, prices_before, label='Prices before the Decree Law', color='blue')
+ax.plot(days_after, prices_after, label='Prices after the Decree Law', color='red')
+ax.axvline(x=12, color='gray', linestyle='--', label='Entry into force of the Decree Law')
+ax.set_xlabel('Day')
+ax.set_ylabel('Average Price')
+ax.set_title('Trend of Average Gasoline Self-Service Prices (First Quarter 2023) in the Province of Trento')
+ax.set_ylim(1.700, 1.95)
+ax.legend()
+plt.show()
+
+####
+PREPARING DATA FOR THE GAME:
+df=get_data_trimester_agent(cartella_prezzi1tr, cartella_anagrafica1tr, fuel='Benzina', province='TN', is_self=True, station_ids=None)
+df.index=pd.to_datetime(df.index, format='%Y%m%d')
+df = df.sort_index()
+missing_ids = df.columns[df.isna().any(axis=0)].tolist()
+df_clean= df.drop(columns=missing_ids)
+means = df_clean.mean()
+standard_deviations = df_clean.std()
+
+#Create a dataframe with data for each player: means are used to divide the petrol stations into clusters
+#standard deviations are used to estimate parameters a priori 
+df_stat = pd.DataFrame({
+    'idImpianto': means.index,
+    'Mean': means.values,
+    'Standard_Deviation': standard_deviations.values
+})
+df_stat.set_index('idImpianto', inplace=True)
+
+df_stat = df_stat[df_stat['Mean']>1.75] #remove outlier (optional)
+
+#SUBDIVISION IN CLUSTERS
+kmeans = KMeans(n_clusters=3, random_state=42)
+df_stat['Cluster_Originale'] = kmeans.fit_predict(df_stat[['Mean']])
+medie_cluster = df_stat.groupby('Cluster_Originale')['Mean'].mean().sort_values()
+mappa_cluster = {vecchio: nuovo for nuovo, vecchio in enumerate(medie_cluster.index)}
+df_stat['Cluster'] = df_stat['Cluster_Originale'].map(mappa_cluster) 
+
+sigma_series = df_stat.loc[df_clean.columns, 'Standard_Deviation']
+df_clean = df[df_stat.index]
+labels_ordinati = df_stat.loc[df_clean.columns, 'Cluster'].values
+labels_series_fixed = pd.Series(labels_ordinati, index=df_clean.columns)
