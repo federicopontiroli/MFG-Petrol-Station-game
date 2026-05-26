@@ -1,4 +1,4 @@
-# Mean Field Games for Fuel Pricing
+# The petrol station game: the regional average price
 
 This repository contains the data pipeline, numerical simulations, and empirical calibration for a multi-population **Mean Field Game (MFG)** model applied to the retail fuel market. The theoretical framework and its applications have been discussed in a joint work with **Fabio Bagagiolo** and **Ivan Romanò**.
 
@@ -28,3 +28,4 @@ The complete raw datasets are publicly provided by the Italian Ministry of Enter
 If you are interested in the mathematical foundations of Mean Field Games and the core framework that inspired this application, please refer to:
 
 * O. Guéant, J.M. Lasry, P.L. Lions. **Mean field games and applications.** In: *Paris-Princeton Lectures on Mathematical Finance 2010*. Lecture Notes in Mathematics, vol 2003, pages 205–266, Springer, Berlin, Heidelberg, 2011.
+* %R 2026arXiv260524241B, **The petrol station game: the regional average price. A mean field analysis**, Bagagiolo, Fabio; Pontiroli, Federico; Romanò, Ivan, arXiv e-prints, 05/2026, arXiv:2605.24241, Optimization and Control, ((https://ui.adsabs.harvard.edu/abs/2026arXiv260524241B))
