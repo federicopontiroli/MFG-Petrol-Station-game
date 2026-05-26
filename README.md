@@ -1,13 +1,13 @@
 # The petrol station game: the regional average price
 
-This repository contains the data pipeline, numerical simulations, and empirical calibration for a multi-population **Mean Field Game (MFG)** model applied to the retail fuel market. The theoretical framework and its applications have been discussed in a joint work with **Fabio Bagagiolo** and **Ivan Romanò**.
+This repository contains the data pipeline, numerical simulations and calibration for a multi-population **Mean Field Game (MFG)** model applied to the fuel prices. The theoretical framework and its applications have been discussed in a joint work with **Fabio Bagagiolo** and **Ivan Romanò**.
 
 The project models the strategic pricing behavior of individual petrol stations as rational agents interacting within a competitive environment, using real-world data from the Autonomous Province of Trento.
 
 ## Repository Contents
 
 * **Data Extraction & Cleaning:** A complete pipeline to extract and clean daily gasoline prices in Italy filtered by fuel type, service mode (e.g., self-service), and province. It includes modules for individual volatility estimation ($\sigma_i$) and $k$-means clustering.
-* **Dynamics Simulations:** Functions to simulate price trajectories under both homogeneous agent assumptions and multi-population ($K$-clusters) dynamics. Real historical data is utilized to initialize the game and calibrate behavioral parameters against empirical trends.
+* **Dynamics Simulations:** Functions to simulate price trajectories under both homogeneous agent assumptions and multi-population ($K$-clusters) dynamics. Real historical data is utilized to initialize the game and calibrate model parameters.
 
 ---
 
